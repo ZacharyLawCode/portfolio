@@ -2,44 +2,37 @@
 import React, { useEffect, useState } from 'react';
 import { fetchAccountInfo } from '../models/AlpacaModel.jsx';
 
-// Functional component to display account information
-const AccountInfo = () => {
-  // State to store account information
-  const [accountInfo, setAccountInfo] = useState(null);
-  // State to store any error message
-  const [error, setError] = useState(null);
 
+const AccountInfo = () => { // Functional component to display account information
+  const [accountInfo, setAccountInfo] = useState(null);   // State to store account information
+  const [error, setError] = useState(null);   // State to store any error message
+ 
   useEffect(() => {
-    // Fetch the account info when the component mounts
-    const getAccountInfo = async () => {
+
+    const getAccountInfo = async () => {     // Fetch the account info when the component mounts
       try {
-        // Call the function to fetch account info from the API
-        const info = await fetchAccountInfo();
-        
-        // If account info is received, update the state
-        if (info) {
+        const info = await fetchAccountInfo();         // Call the function to fetch account info from the API    
+        if (info) {         // If account info is received, update the state
           setAccountInfo(info);
         } else {
-          // If no info is returned, set an error message
-          setError('Failed to fetch account info.');
+          setError('Failed to fetch account info.');           // If no info is returned, set an error message
         }
       } catch (err) {
-        // Handle any errors during the fetch operation
-        setError('Error fetching account info.');
+        setError('Error fetching account info.');         // Handle any errors during the fetch operation
       }
     };
 
-    // Call the async function to fetch data
-    getAccountInfo();
+
+    getAccountInfo();     // Call the async function to fetch data
   }, []); // Empty dependency array to run the effect only once, after the initial render
 
-  // If there's an error, display the error message
-  if (error) {
+
+  if (error) {   // If there's an error, display the error message
     return <div>Error: {error}</div>;
   }
 
-  // If account info is not yet loaded, show a loading message
-  if (!accountInfo) {
+
+  if (!accountInfo) {   // If account info is not yet loaded, show a loading message
     return <div>Loading account info...</div>;
   }
 
@@ -52,5 +45,4 @@ const AccountInfo = () => {
   );
 };
 
-// Export the component to be used in other parts of the application
-export default AccountInfo;
+export default AccountInfo; // Export the component to be used in other parts of the application
