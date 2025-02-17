@@ -1,15 +1,46 @@
-import React from 'react'; // Import React to create a functional component
-import AccountInfo from './controllers/AlpacaController.jsx'; // Import the AccountInfo component from the controllers folder
+// src/components/AccountInfo.jsx
 
+import React, { useEffect, useState } from 'react';
+import AlpacaController from './controllers/AlpacaController';
 
-function App() { // Main App component
+const AccountInfo = () => {
+  const [account, setAccount] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch account data on component mount
+  useEffect(() => {
+    const getAccountData = async () => {
+      setLoading(true);
+      const result = await AlpacaController.fetchAccountData();
+      if (result.success) {
+        setAccount(result.data); // Store the account data
+      } else {
+        setError(result.error); // Store the error message if any
+      }
+      setLoading(false);
+    };
+
+    getAccountData(); // Fetch the data when the component mounts
+  }, []);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
+
   return (
-    // Main container for the application
-    <div className="App">       {/* Heading for the application */}
-      <h1>Alpaca Account Info</h1>       {/* Render the AccountInfo component to display account details */}
-      <AccountInfo />
+    <div>
+      <h1>Account Information</h1>
+      <p><strong>Account ID:</strong> {account.id}</p>
+      <p><strong>Cash:</strong> {account.cash}</p>
+      <p><strong>Buying Power:</strong> {account.buying_power}</p>
+      {/* You can display other fields based on the Alpaca account data */}
     </div>
   );
-}
+};
 
-export default App; // Export the App component to be used as the root component
+export default AccountInfo;
