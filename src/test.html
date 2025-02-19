@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Candlestick Chart with Tooltip</title>
+  
+  <!-- Include LightweightCharts CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.min.js"></script>
+
+  
+
+</head>
+<body>
+  <div id="chart"></div>
+
+  <script>
+    async function fetchBars() {
+      try {
+        const response = await fetch('http://localhost:3000/api/bars');
+        if (!response.ok) {
+          throw new Error(`Error: ${response.statusText}`);
+        }
+        const bars = await response.json();
+        if (bars && bars.length > 0) {
+          const chartData = formatDataForChart(bars);
+          plotChart(chartData);
+        } else {
+          console.error('No data found.');
+        }
+      } catch (error) {
+        console.error("Error fetching candlestick data:", error);
+      }
+    }
+
+    function formatDataForChart(bars) {
+      return bars.map(bar => ({
+        time: new Date(bar.Timestamp).getTime() / 1000,
+        open: bar.OpenPrice,
+        high: bar.HighPrice,
+        low: bar.LowPrice,
+        close: bar.ClosePrice,
+      }));
+    }
+
+    function plotChart(data) {
+      if (typeof LightweightCharts === 'undefined') {
+        console.error("LightweightCharts library is not loaded.");
+        return;
+      }
+
+      const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+        width: 2000,
+        height: 1000,
+        timeScale: {
+          timeVisible: true,
+          secondsVisible: true,
+        },
+      });
+
+      const candlestickSeries = chart.addCandlestickSeries();
+      candlestickSeries.setData(data);
+    }
+
+    fetchBars();
+  </script>
+</body>
+</html>

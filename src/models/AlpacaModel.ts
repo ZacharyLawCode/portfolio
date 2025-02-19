@@ -1,47 +1,62 @@
-// models/AlpacaModel.ts
+import Alpaca from '@alpacahq/alpaca-trade-api';
 
-// Accessing the environment variables defined in .env file
-const API_URL = import.meta.env.VITE_API_URL as string;
-const API_KEY = import.meta.env.VITE_API_KEY as string;
-const API_SECRET_KEY = import.meta.env.VITE_API_SECRET_KEY as string;
-
-export interface AccountData {
-  id: string;
-  status: string;
-  currency: string;
-  cash: string;
-  // Add more fields as needed based on the Alpaca API response
+// Define the structure of candlestick data
+interface CandlestickData {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
 }
 
-class FetchAccount {
-  // Method to fetch account data from Alpaca API
-  static async getAccountData(): Promise<AccountData> {
+// Alpaca Model class
+class AlpacaModel {
+  private static alpaca = new Alpaca({
+    keyId: import.meta.env.VITE_API_KEY as string,
+    secretKey: import.meta.env.VITE_API_SECRET_KEY as string,
+    paper: true, // Use paper trading mode
+  });
+
+  // Method to fetch candlestick data
+  static async getCandles(
+    symbol: string,
+    start: string,
+    end: string,
+    timeframe: string,
+    limit: number
+  ): Promise<CandlestickData[]> {
     try {
-      const response = await fetch(`${API_URL}/account`, {
-        method: 'GET',
-        headers: {
-          'APCA-API-KEY-ID': API_KEY,
-          'APCA-API-SECRET-KEY': API_SECRET_KEY,
-          'Content-Type': 'application/json',
-        },
+      // Fetch bars using Alpaca API
+      const barsIterator = this.alpaca.getBarsV2(symbol, {
+        start,
+        end,
+        timeframe,
+        limit,
       });
 
-      // If the response is not OK, throw an error
-      if (!response.ok) {
-        throw new Error('Failed to fetch account data from Alpaca API');
+      const bars: CandlestickData[] = [];
+
+      // Iterate over the async iterator and collect the bars data
+      for await (const bar of barsIterator) {
+        bars.push({
+          time: new Date(bar.t).getTime(), // Convert timestamp to milliseconds
+          open: bar.o,
+          high: bar.h,
+          low: bar.l,
+          close: bar.c,
+        });
       }
 
-      // Parse the response as JSON
-      const data = (await response.json()) as AccountData;
-      return data;
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        throw new Error(`Error fetching data: ${error.message}`);
-      } else {
-        throw new Error('An unknown error occurred while fetching data');
+      if (bars.length === 0) {
+        throw new Error('No bars data available for the given symbol and date range');
       }
+
+      return bars;
+    } catch (error: any) {
+      console.error('Error fetching candlestick data:', error.message);
+      throw new Error('Failed to fetch candlestick data from Alpaca API');
     }
   }
 }
 
-export default FetchAccount;
+export default AlpacaModel;
