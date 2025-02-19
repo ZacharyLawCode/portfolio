@@ -13,7 +13,7 @@ export interface AccountData {
   // Add more fields as needed based on the Alpaca API response
 }
 
-class AlpacaModel {
+class FetchAccount {
   // Method to fetch account data from Alpaca API
   static async getAccountData(): Promise<AccountData> {
     try {
@@ -44,4 +44,4 @@ class AlpacaModel {
   }
 }
 
-export default AlpacaModel;
+export default FetchAccount;
