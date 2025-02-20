@@ -23,24 +23,69 @@
       margin: 0 auto 0px auto; /* Center the chart horizontally and reduce bottom margin */
     }
 
+    .table-container {
+      width: 100%;
+      margin-top: 20px;
+    }
+
     table {
       width: 80%; /* Adjust the table width to align with the chart */
       border-collapse: collapse;
-      margin-top: 10px; /* Adjust top margin to reduce space between chart and table */
+      border-radius: 8px; /* Rounded corners */
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow effect */
+      margin-top: 10px;
     }
 
     th, td {
-      border: 1px solid black;
-      padding: 8px;
+      border: 1px solid #ddd;
+      padding: 12px 16px;
       text-align: center;
+      font-size: 14px;
     }
 
     th {
-      background-color: #f2f2f2;
+      background-color: #6a0dad; /* Purple background for table header */
+      color: white;
+      cursor: pointer; /* Add cursor pointer for clickable headers */
+      position: relative; /* To position the sort button */
+    }
+
+    th:hover {
+      background-color: #8a2be2; /* Lighter purple on hover */
+    }
+
+    tr:nth-child(even) {
+      background-color: #f2f2f2; /* Zebra stripes for table rows */
+    }
+
+    tr:hover {
+      background-color: #ddd; /* Hover effect for rows */
     }
 
     .total-row {
       font-weight: bold;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+
+    .reset-sort-button {
+      background-color: #6a0dad;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .reset-sort-button:hover {
+      background-color: #8a2be2;
+    }
+
+    /* Ensure reset button is placed above the table */
+    .reset-sort-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 10px;
     }
   </style>
 </head>
@@ -50,19 +95,35 @@
   </div>
 
   <h2>Trade Log</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Action</th>
-        <th>Price</th>
-        <th>Net Difference</th>
-      </tr>
-    </thead>
-    <tbody id="trade-log"></tbody>
-  </table>
+
+  <!-- Reset Sort Button Positioned Above the Table -->
+  <div class="reset-sort-container">
+    <button class="reset-sort-button" onclick="resetSort()">Reset Sort</button>
+  </div>
+
+  <div class="table-container">
+    <table id="trade-table">
+      <thead>
+        <tr>
+          <th data-sort="date" onclick="sortTable('date')">Date</th>
+          <th data-sort="action" onclick="sortTable('action')">Action</th>
+          <th data-sort="price" onclick="sortTable('price')">Price</th>
+          <th data-sort="net-diff" onclick="sortTable('net-diff')">Net Difference</th>
+        </tr>
+      </thead>
+      <tbody id="trade-log"></tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="3">Total Net Difference</td>
+          <td id="total-net-diff">0.00</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
 
   <script>
+    let originalRows = [];  // To store the original order of the rows
+
     async function fetchBars() {
       try {
         const response = await fetch('http://localhost:3000/api/bars');
@@ -184,6 +245,7 @@
       let lastBuyPrice = null;
       let totalNetDifference = 0;  // Initialize total net difference
       const logTable = document.getElementById('trade-log');
+      const totalNetDiffCell = document.getElementById('total-net-diff');  // Cell for total net difference
 
       bars.forEach(bar => {
         const date = new Date(bar.Timestamp);
@@ -213,14 +275,61 @@
         logTable.innerHTML += row;
       });
 
-      // Add total net difference row at the bottom
-      const totalRow = `
-        <tr class="total-row">
-          <td colspan="3">Total Net Difference</td>
-          <td>${totalNetDifference.toFixed(2)}</td>
-        </tr>
-      `;
-      logTable.innerHTML += totalRow;  // Append the total row
+      // Update the total net difference in the footer
+      totalNetDiffCell.textContent = totalNetDifference.toFixed(2);
+      
+      // Store the original rows in case we need to reset the sort order
+      originalRows = Array.from(logTable.rows);
+    }
+
+    function sortTable(column) {
+      const table = document.getElementById('trade-table');
+      const tbody = table.querySelector('tbody');
+      const rows = Array.from(tbody.rows);
+
+      let sortOrder = 1;  // Default is ascending
+
+      // Determine if we are sorting by ascending or descending
+      const header = table.querySelector(`th[data-sort=${column}]`);
+      if (!header) return;  // Exit if no header found
+
+      const currentSort = header.classList.contains('sort-asc') ? 'sort-asc' : 'sort-desc';
+      sortOrder = currentSort === 'sort-asc' ? -1 : 1;  // Toggle the sort direction
+
+      // Sort rows based on the column
+      const sortedRows = rows.sort((rowA, rowB) => {
+        const cellA = rowA.cells[column === 'date' ? 0 : column === 'action' ? 1 : column === 'price' ? 2 : 3].textContent.trim();
+        const cellB = rowB.cells[column === 'date' ? 0 : column === 'action' ? 1 : column === 'price' ? 2 : 3].textContent.trim();
+
+        // Handle numerical sorting for price and net difference
+        const valueA = column === 'price' || column === 'net-diff' ? parseFloat(cellA || 0) : cellA;
+        const valueB = column === 'price' || column === 'net-diff' ? parseFloat(cellB || 0) : cellB;
+
+        if (valueA > valueB) return sortOrder;
+        if (valueA < valueB) return -sortOrder;
+        return 0;
+      });
+
+      tbody.innerHTML = '';  // Clear the current rows
+      tbody.append(...sortedRows);  // Append sorted rows
+
+      // Remove existing sort classes from headers
+      table.querySelectorAll('th').forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
+      header.classList.add(sortOrder === 1 ? 'sort-asc' : 'sort-desc');
+    }
+
+    function resetSort() {
+      const table = document.getElementById('trade-table');
+      const tbody = table.querySelector('tbody');
+      
+      // Reset rows to the original order
+      tbody.innerHTML = '';
+      tbody.append(...originalRows);
+
+      // Remove sorting classes from the headers
+      table.querySelectorAll('th').forEach(th => {
+        th.classList.remove('sort-asc', 'sort-desc');
+      });
     }
 
     fetchBars();
