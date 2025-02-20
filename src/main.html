@@ -8,6 +8,7 @@
   <!-- Chart.js & Financial Chart Plugin -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
 
   <!-- ✅ FIX: Add Moment.js & Chart.js Date Adapter -->
   <script src="https://cdn.jsdelivr.net/npm/moment"></script>
@@ -36,6 +37,10 @@
 
     th {
       background-color: #f2f2f2;
+    }
+
+    .total-row {
+      font-weight: bold;
     }
   </style>
 </head>
@@ -68,7 +73,7 @@
         if (bars && bars.length > 0) {
           const chartData = formatDataForChart(bars);
           console.log("Formatted Chart Data: ", chartData);  // Debugging
-          plotChart(chartData);
+          plotChart(chartData, bars);  // Pass both chart data and bar data
           logTrades(bars);
         } else {
           console.error('No data found.');
@@ -93,7 +98,7 @@
       });
     }
 
-    function plotChart(data) {
+    function plotChart(data, bars) {
       const ctx = document.getElementById('chart').getContext('2d');
 
       new Chart(ctx, {
@@ -110,11 +115,41 @@
             },
             barThickness: 5,  // Adjusts the candle width
             categoryPercentage: 0.8, // Controls spacing between candles
-            barPercentage: 0.8 // Adjusts bar width inside category space
+            barPercentage: 0.8, // Adjusts bar width inside category space
           }]
         },
         options: {
           responsive: true,
+          plugins: {
+            tooltip: {
+              enabled: true,
+              callbacks: {
+                label: function(context) {
+                  return context.raw.c.toFixed(2); // Show the close price in the tooltip
+                }
+              }
+            },
+            annotation: {
+              annotations: bars.map((bar, index) => {
+                const action = (index % 2 === 0) ? "BUY" : "SELL";
+
+                // Create marker based on action (BUY or SELL)
+                return {
+                  type: 'point',
+                  xValue: moment(bar.Timestamp).valueOf(),
+                  yValue: bar.ClosePrice,
+                  radius: 5,
+                  backgroundColor: action === 'BUY' ? 'green' : 'red',
+                  pointStyle: action === 'BUY' ? 'triangle' : 'triangle',
+                  label: {
+                    content: action === 'BUY' ? 'BUY' : 'SELL',
+                    enabled: true,
+                    position: 'top'
+                  }
+                };
+              })
+            }
+          },
           scales: {
             x: {
               type: 'time', // Time scale for the x-axis
@@ -146,7 +181,8 @@
     }
 
     function logTrades(bars) {
-      let netDifference = 0;
+      let lastBuyPrice = null;
+      let totalNetDifference = 0;  // Initialize total net difference
       const logTable = document.getElementById('trade-log');
 
       bars.forEach(bar => {
@@ -154,20 +190,37 @@
         const day = date.getDate();
         const action = (day % 2 === 0) ? "BUY" : "SELL";
         const price = bar.ClosePrice;
-        
-        if (action === "BUY") netDifference -= price;
-        if (action === "SELL") netDifference += price;
+        let netDifference = '';
 
-        const row = `
+        if (action === "BUY") {
+          // For BUY, leave net difference blank
+          lastBuyPrice = price;  // Store the price of the last BUY
+        } else if (action === "SELL" && lastBuyPrice !== null) {
+          // For SELL, calculate the net difference between the last BUY and current SELL
+          netDifference = (price - lastBuyPrice).toFixed(2);
+          totalNetDifference += parseFloat(netDifference);  // Add the net difference to the total
+          lastBuyPrice = null;  // Reset lastBuyPrice after the SELL
+        }
+
+        const row = ` 
           <tr>
             <td>${date.toDateString()}</td>
             <td>${action}</td>
             <td>${price.toFixed(2)}</td>
-            <td>${netDifference.toFixed(2)}</td>
+            <td>${netDifference}</td>
           </tr>
         `;
         logTable.innerHTML += row;
       });
+
+      // Add total net difference row at the bottom
+      const totalRow = `
+        <tr class="total-row">
+          <td colspan="3">Total Net Difference</td>
+          <td>${totalNetDifference.toFixed(2)}</td>
+        </tr>
+      `;
+      logTable.innerHTML += totalRow;  // Append the total row
     }
 
     fetchBars();
