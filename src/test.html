@@ -3,16 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Candlestick Chart with Tooltip</title>
+  <title>Stock Trade Logger</title>
   
-  <!-- Include LightweightCharts CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.min.js"></script>
+  <!-- Chart.js & Financial Chart Plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
 
-  
+  <!-- ✅ FIX: Add Moment.js & Chart.js Date Adapter -->
+  <script src="https://cdn.jsdelivr.net/npm/moment"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
 
+  <style>
+    /* Centering the chart */
+    #chart-container {
+      width: 90%; /* Increase the width of the chart container */
+      max-width: 2000px; /* Optional: Limit the maximum width */
+      height: 1000px; /* Double the height of the chart */
+      margin: 0 auto 0px auto; /* Center the chart horizontally and reduce bottom margin */
+    }
+
+    table {
+      width: 80%; /* Adjust the table width to align with the chart */
+      border-collapse: collapse;
+      margin-top: 10px; /* Adjust top margin to reduce space between chart and table */
+    }
+
+    th, td {
+      border: 1px solid black;
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+  </style>
 </head>
 <body>
-  <div id="chart"></div>
+  <div id="chart-container">
+    <canvas id="chart"></canvas>
+  </div>
+
+  <h2>Trade Log</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Action</th>
+        <th>Price</th>
+        <th>Net Difference</th>
+      </tr>
+    </thead>
+    <tbody id="trade-log"></tbody>
+  </table>
 
   <script>
     async function fetchBars() {
@@ -24,7 +67,9 @@
         const bars = await response.json();
         if (bars && bars.length > 0) {
           const chartData = formatDataForChart(bars);
+          console.log("Formatted Chart Data: ", chartData);  // Debugging
           plotChart(chartData);
+          logTrades(bars);
         } else {
           console.error('No data found.');
         }
@@ -34,32 +79,95 @@
     }
 
     function formatDataForChart(bars) {
-      return bars.map(bar => ({
-        time: new Date(bar.Timestamp).getTime() / 1000,
-        open: bar.OpenPrice,
-        high: bar.HighPrice,
-        low: bar.LowPrice,
-        close: bar.ClosePrice,
-      }));
+      return bars.map(bar => {
+        const formattedDate = moment(bar.Timestamp).toDate(); // Use moment.js to format date
+        const timestamp = moment(formattedDate).valueOf();  // Convert to timestamp (milliseconds)
+        console.log("Formatted Date (Timestamp): ", timestamp);  // Debugging
+        return {
+          x: timestamp,  // Use timestamp for x-axis
+          o: bar.OpenPrice,
+          h: bar.HighPrice,
+          l: bar.LowPrice,
+          c: bar.ClosePrice
+        };
+      });
     }
 
     function plotChart(data) {
-      if (typeof LightweightCharts === 'undefined') {
-        console.error("LightweightCharts library is not loaded.");
-        return;
-      }
+      const ctx = document.getElementById('chart').getContext('2d');
 
-      const chart = LightweightCharts.createChart(document.getElementById('chart'), {
-        width: 2000,
-        height: 1000,
-        timeScale: {
-          timeVisible: true,
-          secondsVisible: true,
+      new Chart(ctx, {
+        type: 'candlestick',
+        data: {
+          datasets: [{
+            label: 'Stock Prices',
+            data: data,
+            borderColor: 'black',
+            color: {
+              up: 'green',
+              down: 'red',
+              unchanged: 'gray'
+            },
+            barThickness: 5,  // Adjusts the candle width
+            categoryPercentage: 0.8, // Controls spacing between candles
+            barPercentage: 0.8 // Adjusts bar width inside category space
+          }]
         },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              type: 'time', // Time scale for the x-axis
+              time: {
+                unit: 'day', // Show daily data
+                tooltipFormat: 'll', // Format the tooltip
+                displayFormats: {
+                  day: 'MM/DD/YYYY' // Use numeric date format on the x-axis (e.g., 01/01/2024)
+                }
+              },
+              title: {
+                display: true,
+                text: 'Date'
+              },
+              ticks: {
+                autoSkip: true,
+                maxTicksLimit: 10  // Prevent overcrowding of labels
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Price'
+              }
+            }
+          }
+        }
       });
+    }
 
-      const candlestickSeries = chart.addCandlestickSeries();
-      candlestickSeries.setData(data);
+    function logTrades(bars) {
+      let netDifference = 0;
+      const logTable = document.getElementById('trade-log');
+
+      bars.forEach(bar => {
+        const date = new Date(bar.Timestamp);
+        const day = date.getDate();
+        const action = (day % 2 === 0) ? "BUY" : "SELL";
+        const price = bar.ClosePrice;
+        
+        if (action === "BUY") netDifference -= price;
+        if (action === "SELL") netDifference += price;
+
+        const row = `
+          <tr>
+            <td>${date.toDateString()}</td>
+            <td>${action}</td>
+            <td>${price.toFixed(2)}</td>
+            <td>${netDifference.toFixed(2)}</td>
+          </tr>
+        `;
+        logTable.innerHTML += row;
+      });
     }
 
     fetchBars();
