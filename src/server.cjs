@@ -15,17 +15,15 @@ const alpaca = new Alpaca({
   paper: true,  // Use paper trading for testing
 });
 
-// API endpoint to fetch bars
 app.get("/api/bars", async (req, res) => {
   try {
-    // Fetching bars data from Alpaca API for AAPL
     const barsIterator = alpaca.getBarsV2("AAPL", {
-      start: "2023-04-01T00:00:00Z",
-      end: "2024-04-30T23:59:59Z",
+      start: "2024-01-01T00:00:00Z",
+      end: "2025-12-31T23:59:59Z",  // Ensures full-year data
       timeframe: "1D",
-      limit: 100,
+      limit: 1000,
+      feed: "iex",  // Ensures compatibility with free-tier Alpaca accounts
     });
-
     const bars = [];
 
     // Collect bars data from the async iterator

@@ -1,0 +1,81 @@
+#chart-wrapper {
+    width: 100%;
+    overflow-x: auto; /* ✅ Enable horizontal scrolling */
+    white-space: nowrap;
+}
+
+#chart-container {
+    width: 90%;
+    max-width: 2000px;
+    height: 1000px;
+    margin: 0 auto;
+    position: relative;
+    white-space: nowrap;
+    min-width: 1000px; /* ✅ Ensure the chart starts with a reasonable width */
+}
+
+  
+  .table-container {
+    width: 100%;
+    margin-top: 20px;
+  }
+  
+  table {
+    width: 80%;
+    border-collapse: collapse;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 10px;
+  }
+  
+  th, td {
+    border: 1px solid #ddd;
+    padding: 12px 16px;
+    text-align: center;
+    font-size: 14px;
+  }
+  
+  th {
+    background-color: #6a0dad;
+    color: white;
+    cursor: pointer;
+    position: relative;
+  }
+  
+  th:hover {
+    background-color: #8a2be2;
+  }
+  
+  tr:nth-child(even) {
+    background-color: #f2f2f2;
+  }
+  
+  tr:hover {
+    background-color: #ddd;
+  }
+  
+  .total-row {
+    font-weight: bold;
+    background-color: #f9f9f9;
+    color: #333;
+  }
+  
+  .reset-sort-button {
+    background-color: #6a0dad;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .reset-sort-button:hover {
+    background-color: #8a2be2;
+  }
+  
+  .reset-sort-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+  

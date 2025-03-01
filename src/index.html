@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Trade Logger</title>
+  
+  <!-- Chart.js & Financial Chart Plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+
+
+  <!-- Moment.js & Chart.js Date Adapter -->
+  <script src="https://cdn.jsdelivr.net/npm/moment"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="chart-wrapper">
+        <div id="chart-container">
+          <canvas id="chart"></canvas>
+        </div>
+      </div>
+      
+      
+  <h2>Trade Log</h2>
+
+  <div class="reset-sort-container">
+    <button class="reset-sort-button" onclick="resetSort()">Reset Sort</button>
+  </div>
+
+  <div class="table-container">
+    <table id="trade-table">
+      <thead>
+        <tr>
+          <th data-sort="date" onclick="sortTable('date')">Date</th>
+          <th data-sort="action" onclick="sortTable('action')">Action</th>
+          <th data-sort="price" onclick="sortTable('price')">Price</th>
+          <th data-sort="net-diff" onclick="sortTable('net-diff')">Net Difference</th>
+        </tr>
+      </thead>
+      <tbody id="trade-log"></tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="3">Total Net Difference</td>
+          <td id="total-net-diff">0.00</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <script src="chart.js"></script>
+</body>
+</html>
